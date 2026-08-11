@@ -28,6 +28,12 @@ export function GameScreen({ engine, mode, level, preferences, onPause, onResume
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hud = useStore(engine.hud);
 
+  // Applied before the session starts, so a muted player never briefly opens
+  // an audio context: effects run in declaration order.
+  useEffect(() => {
+    engine.setSoundEnabled(preferences.sound);
+  }, [engine, preferences.sound]);
+
   // Attach the renderer and start the session. The loop runs outside React
   // from here on — this effect never re-runs for a HUD update.
   useEffect(() => {

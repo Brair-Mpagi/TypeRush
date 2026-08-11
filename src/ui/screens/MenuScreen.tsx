@@ -37,6 +37,10 @@ export function MenuScreen({ onPlay, preferences, onTogglePreference, progress, 
       <fieldset className="options">
         <legend>Accessibility</legend>
         <label className="option">
+          <input type="checkbox" checked={preferences.sound} onChange={() => onTogglePreference('sound')} />
+          Sound effects
+        </label>
+        <label className="option">
           <input
             type="checkbox"
             checked={preferences.reducedMotion}

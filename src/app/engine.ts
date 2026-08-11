@@ -1,4 +1,5 @@
 import { CanvasRenderer } from '../render/canvasRenderer';
+import { Sfx } from './audio';
 import { rampFactor } from '../sim/difficulty';
 import { buildErrorMap, computeMetrics, weakestKeys, type KeyStat, type SessionMetrics } from '../sim/metrics';
 import type { GameEvent, InputEvent, SessionState } from '../sim/types';
@@ -73,6 +74,7 @@ const MAX_DT = 0.05;
 
 export class GameEngine {
   readonly hud = new Store<HudSnapshot>(EMPTY_HUD);
+  readonly sfx = new Sfx();
 
   private simCtx = createContext();
   private state: SessionState | null = null;
@@ -94,10 +96,15 @@ export class GameEngine {
   detach(): void {
     this.stop();
     this.renderer = null;
+    this.sfx.dispose();
   }
 
   setReducedMotion(value: boolean): void {
     this.reducedMotion = value;
+  }
+
+  setSoundEnabled(value: boolean): void {
+    this.sfx.setEnabled(value);
   }
 
   /**
@@ -115,6 +122,8 @@ export class GameEngine {
     this.startWallClock = Date.now();
     this.state = createSession({ ...options, startedAt: this.startWallClock });
     this.renderer?.vfx.reset();
+    // Starting a run always follows a click, which is the gesture WebAudio wants.
+    this.sfx.resume();
     this.pending = [];
     this.paused = false;
     this.lastTime = performance.now();
@@ -181,6 +190,7 @@ export class GameEngine {
         // Shots, explosions and shake are presentation: the renderer reacts to
         // the same event stream, and nothing flows back into the simulation.
         this.renderer?.vfx.handleEvents(events);
+        this.sfx.handleEvents(events);
         this.onEvents?.(events);
         if (events.some((e) => e.type === 'gameOver')) this.finish(state);
       }

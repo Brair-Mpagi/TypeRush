@@ -9,6 +9,8 @@ export interface Preferences {
   announceWords: boolean;
   /** Draws high-contrast text with no colour-only signalling. */
   highContrast: boolean;
+  /** Synthesised shot/explosion feedback. */
+  sound: boolean;
 }
 
 function systemPrefersReducedMotion(): boolean {
@@ -20,6 +22,7 @@ function load(): Preferences {
     reducedMotion: systemPrefersReducedMotion(),
     announceWords: false,
     highContrast: false,
+    sound: true,
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
