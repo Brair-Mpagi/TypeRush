@@ -43,6 +43,7 @@ src/
     headless.ts   drive the sim without a browser (tests, balance tuning)
   app/          loop driver + pub/sub store
   render/       Canvas 2D renderer
+    vfx.ts        starfield, projectiles, explosions, shake — driven by game events
   ui/           React screens, HUD, preferences
   persistence/  IndexedDB repository
 ```
@@ -53,6 +54,10 @@ pooling buys — but performs no I/O and draws no randomness it does not thread 
 
 ### Decisions worth knowing
 
+- **The shooter fiction lives entirely in the renderer.** Words are enemy craft descending on your ship, and each
+  correct key fires a bolt that tracks its target; kills burst into particles, a word that gets through hits the
+  ship and shakes the screen. None of that reaches the simulation — the VFX layer is a consumer of the same event
+  stream the tests read, so the core stays headless and the visuals can change without touching gameplay.
 - **Metrics are folds, never counters.** Every number on the results screen is recomputed from the append-only
   keystroke log, so WPM and accuracy cannot drift out of sync with what was actually typed (§9).
 - **Miss detection is an event stream.** Arrival times are precomputed at spawn and popped off a min-heap, rather

@@ -86,11 +86,17 @@ export type InputEvent =
   | { type: 'key'; key: string }
   | { type: 'backspace' };
 
+/**
+ * Events carry the world position where they happened. The renderer consumes
+ * them a frame later, by which point a completed word is already back in the
+ * pool — without the coordinates it would have to guess where to draw the
+ * explosion.
+ */
 export type GameEvent =
   | { type: 'wordSpawned'; wordId: string; text: string }
-  | { type: 'charTyped'; wordId: string; key: string; correct: boolean }
-  | { type: 'wordCompleted'; wordId: string; text: string; points: number; combo: number }
-  | { type: 'wordMissed'; wordId: string; text: string }
+  | { type: 'charTyped'; wordId: string; key: string; correct: boolean; charIndex: number; x: number; y: number }
+  | { type: 'wordCompleted'; wordId: string; text: string; points: number; combo: number; x: number; y: number }
+  | { type: 'wordMissed'; wordId: string; text: string; x: number; y: number }
   | { type: 'comboBroken'; at: number }
   | { type: 'levelChanged'; level: number; direction: 'up' | 'down' }
   | { type: 'gameOver'; score: number };

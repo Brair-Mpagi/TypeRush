@@ -152,7 +152,15 @@ function applyKey(ctx: SimContext, state: SessionState, key: string, events: Gam
   const correct = key === expected;
 
   state.keystrokes.push(keystroke(key, expected, correct, state.elapsed, target.id));
-  events.push({ type: 'charTyped', wordId: target.id, key, correct });
+  events.push({
+    type: 'charTyped',
+    wordId: target.id,
+    key,
+    correct,
+    charIndex: target.typedIndex,
+    x: target.x + target.typedIndex * CHAR_WIDTH,
+    y: target.y,
+  });
 
   if (target.firstKeyTime < 0) target.firstKeyTime = state.elapsed;
 
@@ -212,7 +220,15 @@ function completeWord(ctx: SimContext, state: SessionState, word: WordEntity, ev
   state.score += points;
   state.wordsCompleted++;
 
-  events.push({ type: 'wordCompleted', wordId: word.id, text: word.text, points, combo: state.combo });
+  events.push({
+    type: 'wordCompleted',
+    wordId: word.id,
+    text: word.text,
+    points,
+    combo: state.combo,
+    x: word.x + (word.text.length * CHAR_WIDTH) / 2,
+    y: word.y,
+  });
 
   recordWordOutcome(state, word);
   removeWord(ctx, state, word);
@@ -226,7 +242,13 @@ function missWord(ctx: SimContext, state: SessionState, word: WordEntity, events
     state.combo = 0;
     events.push({ type: 'comboBroken', at: state.elapsed });
   }
-  events.push({ type: 'wordMissed', wordId: word.id, text: word.text });
+  events.push({
+    type: 'wordMissed',
+    wordId: word.id,
+    text: word.text,
+    x: word.x + (word.text.length * CHAR_WIDTH) / 2,
+    y: word.y,
+  });
 
   recordWordOutcome(state, word);
   removeWord(ctx, state, word);

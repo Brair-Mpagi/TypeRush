@@ -11,21 +11,32 @@ import { GameEngine, type SessionSummary } from './engine';
 let frameCallbacks: FrameRequestCallback[] = [];
 let now = 0;
 
+/**
+ * jsdom has no 2D context. Rather than enumerate every canvas call the renderer
+ * makes — a list that goes stale every time the visuals change — hand back a
+ * proxy that answers any method with a spy and accepts any property write.
+ */
 function stubCanvasContext(): void {
-  const context = {
-    canvas: null,
-    setTransform: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    fillText: vi.fn(),
-    roundRect: vi.fn(),
-    createLinearGradient: () => ({ addColorStop: vi.fn() }),
-  };
+  const methods = new Map<string, ReturnType<typeof vi.fn>>();
+  const gradient = { addColorStop: vi.fn() };
+  const state: Record<string, unknown> = {};
+  const context = new Proxy(state, {
+    get(target, prop: string) {
+      if (prop in target) return target[prop];
+      if (prop === 'canvas') return null;
+      if (!methods.has(prop)) {
+        methods.set(
+          prop,
+          vi.fn(() => (prop.startsWith('create') ? gradient : undefined)),
+        );
+      }
+      return methods.get(prop);
+    },
+    set(target, prop: string, value) {
+      target[prop] = value;
+      return true;
+    },
+  });
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
     context as unknown as CanvasRenderingContext2D,
   );

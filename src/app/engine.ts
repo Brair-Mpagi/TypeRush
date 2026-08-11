@@ -114,6 +114,7 @@ export class GameEngine {
     resetContext(this.simCtx);
     this.startWallClock = Date.now();
     this.state = createSession({ ...options, startedAt: this.startWallClock });
+    this.renderer?.vfx.reset();
     this.pending = [];
     this.paused = false;
     this.lastTime = performance.now();
@@ -177,6 +178,9 @@ export class GameEngine {
       this.pending = [];
       const { events } = update(this.simCtx, state, dt, inputs);
       if (events.length > 0) {
+        // Shots, explosions and shake are presentation: the renderer reacts to
+        // the same event stream, and nothing flows back into the simulation.
+        this.renderer?.vfx.handleEvents(events);
         this.onEvents?.(events);
         if (events.some((e) => e.type === 'gameOver')) this.finish(state);
       }
