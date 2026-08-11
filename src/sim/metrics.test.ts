@@ -88,6 +88,25 @@ describe('consistency', () => {
     expect(consistency(log)).toBeLessThan(0.6);
   });
 
+  it('ignores the gap between words, which measures spawn timing, not rhythm', () => {
+    const steady = (t: number, wordId: string): Keystroke => ({ ...ks({ key: 'a', t }), wordId });
+    // Even 100ms typing inside each word, with a three-second wait in between.
+    const log = [
+      steady(0, 'w1'),
+      steady(100, 'w1'),
+      steady(200, 'w1'),
+      steady(3200, 'w2'),
+      steady(3300, 'w2'),
+      steady(3400, 'w2'),
+    ];
+    expect(consistency(log)).toBeCloseTo(1, 10);
+  });
+
+  it('still drops when the rhythm inside a word is erratic', () => {
+    const log = [0, 10, 900, 920, 2000].map((t) => ks({ key: 'a', t }));
+    expect(consistency(log)).toBeLessThan(0.6);
+  });
+
   it('stays in [0,1] for any log', () => {
     fc.assert(
       fc.property(fc.array(arbKeystroke), (log) => {

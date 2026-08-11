@@ -45,12 +45,21 @@ export function errorRate(keystrokes: readonly Keystroke[]): number {
  * Consistency as 1 − coefficient of variation of inter-keystroke intervals.
  * Steadier rhythm → closer to 1. Clamped to [0, 1] so a single huge pause
  * can't produce a negative "score".
+ *
+ * Only intervals *within* a word count. The gap between finishing one word and
+ * starting the next is time spent waiting for a target to spawn and descend —
+ * it is a property of the difficulty curve, not of the typist, and it is large
+ * enough to swamp the real rhythm: including it floored this metric at 0 for
+ * essentially every session.
  */
 export function consistency(keystrokes: readonly Keystroke[]): number {
   if (keystrokes.length < 3) return 1;
   const intervals: number[] = [];
   for (let i = 1; i < keystrokes.length; i++) {
-    const dt = keystrokes[i]!.timestamp - keystrokes[i - 1]!.timestamp;
+    const previous = keystrokes[i - 1]!;
+    const current = keystrokes[i]!;
+    if (current.wordId !== previous.wordId) continue;
+    const dt = current.timestamp - previous.timestamp;
     if (dt > 0) intervals.push(dt);
   }
   if (intervals.length < 2) return 1;

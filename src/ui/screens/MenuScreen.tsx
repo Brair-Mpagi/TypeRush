@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MIN_WORDS_FOR_RECORD } from '../../persistence/repository';
 import type { ProgressRow } from '../../persistence/schema';
 import type { Preferences } from '../usePreferences';
 
@@ -19,12 +20,20 @@ export function MenuScreen({ onPlay, preferences, onTogglePreference, progress, 
       <h1 className="title">
         Type<span className="title__accent">Rush</span>
       </h1>
-      <p className="subtitle">Words fall. Type them before they land.</p>
+      <p className="subtitle">Type to shoot. Clear the words before they reach your ship.</p>
 
       {hasHistory && (
         <p className="menu__bests">
-          <span>Best {Math.round(progress.bestWpm)} WPM</span>
-          <span>{(progress.bestAccuracy * 100).toFixed(1)}% accuracy</span>
+          {/* A record needs a long enough run; until then, say so rather than
+              showing a zero that reads like broken data. */}
+          {progress.bestWpm > 0 ? (
+            <>
+              <span>Best {Math.round(progress.bestWpm)} WPM</span>
+              <span>{(progress.bestAccuracy * 100).toFixed(1)}% accuracy</span>
+            </>
+          ) : (
+            <span>Clear {MIN_WORDS_FOR_RECORD} words in a run to set your first record</span>
+          )}
           <span>High score {progress.bestScore.toLocaleString()}</span>
           <span>{progress.xp.toLocaleString()} XP</span>
         </p>
