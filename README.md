@@ -6,6 +6,12 @@ fires a bolt, and a word that reaches the bottom costs you a life.
 Built to the design in [docs/plan.md](docs/plan.md) — the section references (§) throughout the code and this
 README point back at it.
 
+![A wave of enemy craft carrying words descends on the player's ship; the locked target reads "party" with the
+typed letters dimmed](docs/screenshots/gameplay.png)
+
+<sup>Arcade, level 7. Typed letters dim as the word is destroyed, the locked target is outlined, and the craft
+turns red as it enters the danger zone.</sup>
+
 ```bash
 npm install
 npm run dev      # http://localhost:5173
@@ -27,6 +33,15 @@ npm run build    # typecheck + production bundle
 | 8. Backend/social | Leaderboards, multiplayer | out of scope by design |
 
 Five modes ship: learning, arcade, speed test, accuracy and survival.
+
+## Screens
+
+| | |
+|---|---|
+| ![Menu showing personal bests, high score and XP, with accessibility toggles](docs/screenshots/menu.png) | ![Mode picker with five modes and a starting-level slider showing fall speed, spawn interval, word length and concurrency](docs/screenshots/modes.png) |
+| **Menu** — bests and XP, plus the accessibility toggles. History is local and clearable. | **Mode and level** — the level slider previews the difficulty parameters it produces, including where the ramp takes them. |
+| ![A word's craft bursting into particles as the last letter lands](docs/screenshots/kill.png) | ![Results screen with score, WPM, accuracy, consistency, best combo and a weak-key breakdown](docs/screenshots/results.png) |
+| **Destroying a word** — the last letter blows the craft apart; the ship banks toward whatever it is shooting. | **Results** — every figure here is a fold over the keystroke log, including the keys that need work. |
 
 ## Architecture
 
