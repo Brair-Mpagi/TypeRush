@@ -463,10 +463,18 @@ body {
 
 .metric dd {
   margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
   font-family: var(--mono);
   font-size: 24px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+/* The hint sits on its own line so a long one cannot wrap around the value. */
+.metric dd .hint {
+  margin-top: 2px;
+  color: var(--muted);
 }
 
 .hint {
