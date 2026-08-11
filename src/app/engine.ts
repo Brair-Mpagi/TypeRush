@@ -1,4 +1,5 @@
 import { CanvasRenderer } from '../render/canvasRenderer';
+import { rampFactor } from '../sim/difficulty';
 import { buildErrorMap, computeMetrics, weakestKeys, type KeyStat, type SessionMetrics } from '../sim/metrics';
 import type { GameEvent, InputEvent, SessionState } from '../sim/types';
 import { createContext, createSession, resetContext, update, type SessionOptions } from '../sim/update';
@@ -19,6 +20,8 @@ export interface HudSnapshot {
   multiplier: number;
   lives: number;
   level: number;
+  /** In-run speed ramp, ×1 at the start of a session. */
+  ramp: number;
   elapsed: number;
   wordsCompleted: number;
   wordsMissed: number;
@@ -52,6 +55,7 @@ const EMPTY_HUD: HudSnapshot = {
   multiplier: 1,
   lives: 0,
   level: 1,
+  ramp: 1,
   elapsed: 0,
   wordsCompleted: 0,
   wordsMissed: 0,
@@ -220,6 +224,7 @@ export class GameEngine {
       multiplier: Math.min(1 + Math.floor(state.combo / 10), 5),
       lives: state.lives,
       level: state.level,
+      ramp: Math.round(rampFactor(state.elapsed) * 10) / 10,
       elapsed: Math.round(state.elapsed * 10) / 10,
       wordsCompleted: state.wordsCompleted,
       wordsMissed: state.wordsMissed,

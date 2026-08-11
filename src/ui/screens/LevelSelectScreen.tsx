@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { difficultyForMode, MAX_LEVEL } from '../../sim/difficulty';
+import { difficultyAt, difficultyForMode, MAX_LEVEL } from '../../sim/difficulty';
 import type { GameMode } from '../../sim/types';
 
 interface Props {
@@ -22,6 +22,8 @@ export function LevelSelectScreen({ onStart, onBack, highestLevelUnlocked }: Pro
   const [level, setLevel] = useState(1);
   const clampedLevel = Math.min(level, maxLevel);
   const params = difficultyForMode(mode, clampedLevel);
+  // What the same level feels like three minutes in, once the ramp has run.
+  const late = difficultyAt(mode, clampedLevel, 180);
 
   return (
     <div className="screen">
@@ -74,9 +76,15 @@ export function LevelSelectScreen({ onStart, onBack, highestLevelUnlocked }: Pro
           </div>
           <div>
             <dt>On screen</dt>
-            <dd>up to {params.maxConcurrentWords}</dd>
+            <dd>
+              {params.maxConcurrentWords} → {late.maxConcurrentWords}
+            </dd>
           </div>
         </dl>
+        <p className="hint">
+          Starting values. Words get faster and more frequent the longer a run lasts — after three minutes they
+          fall at {Math.round(late.fallSpeed)} u/s, spawning every {(late.spawnIntervalMs / 1000).toFixed(1)}s.
+        </p>
       </div>
 
       <div className="row">

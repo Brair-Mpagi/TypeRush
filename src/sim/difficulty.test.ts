@@ -4,10 +4,16 @@ import {
   ADAPT_DOWN_ACCURACY,
   ADAPT_UP_ACCURACY,
   adaptLevel,
+  difficultyAt,
   difficultyForLevel,
   difficultyForMode,
   ema,
+  LEARNING_MAX_CONCURRENT,
+  MAX_CONCURRENT_WORDS,
   MAX_LEVEL,
+  MAX_RAMP,
+  MIN_SPAWN_INTERVAL_MS,
+  rampFactor,
   TIER_COUNT,
 } from './difficulty';
 
@@ -31,8 +37,8 @@ describe('difficultyForLevel', () => {
         const d = difficultyForLevel(level);
         expect(d.fallSpeed).toBeGreaterThan(0);
         expect(d.spawnIntervalMs).toBeGreaterThanOrEqual(400);
-        expect(d.maxConcurrentWords).toBeGreaterThanOrEqual(1);
-        expect(d.maxConcurrentWords).toBeLessThanOrEqual(6);
+        expect(d.maxConcurrentWords).toBeGreaterThanOrEqual(2);
+        expect(d.maxConcurrentWords).toBeLessThanOrEqual(MAX_CONCURRENT_WORDS);
         expect(d.vocabularyTier).toBeGreaterThanOrEqual(0);
         expect(d.vocabularyTier).toBeLessThan(TIER_COUNT);
         expect(d.wordLengthRange[0]).toBeLessThanOrEqual(d.wordLengthRange[1]);
@@ -56,6 +62,65 @@ describe('difficultyForMode', () => {
 
   it('caps learning vocabulary to the introductory tiers', () => {
     expect(difficultyForMode('learning', MAX_LEVEL).vocabularyTier).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('in-run ramp', () => {
+  it('starts at x1 and rises with time on the clock', () => {
+    expect(rampFactor(0)).toBe(1);
+    expect(rampFactor(60)).toBeGreaterThan(rampFactor(0));
+    expect(rampFactor(180)).toBeGreaterThan(rampFactor(60));
+  });
+
+  it('is monotonic and bounded for any elapsed time', () => {
+    fc.assert(
+      fc.property(fc.double({ min: 0, max: 100000, noNaN: true }), (t) => {
+        const r = rampFactor(t);
+        expect(r).toBeGreaterThanOrEqual(1);
+        expect(r).toBeLessThanOrEqual(MAX_RAMP);
+        expect(rampFactor(t + 1)).toBeGreaterThanOrEqual(r);
+      }),
+    );
+  });
+
+  it('treats a negative or zero clock as the start of the run', () => {
+    expect(rampFactor(-10)).toBe(1);
+  });
+
+  it('speeds words up and shortens the gap between them as a run goes on', () => {
+    const start = difficultyAt('arcade', 3, 0);
+    const later = difficultyAt('arcade', 3, 120);
+    expect(later.fallSpeed).toBeGreaterThan(start.fallSpeed);
+    expect(later.spawnIntervalMs).toBeLessThan(start.spawnIntervalMs);
+    expect(later.maxConcurrentWords).toBeGreaterThan(start.maxConcurrentWords);
+  });
+
+  it('puts more than one word in the air from the very first level', () => {
+    expect(difficultyAt('arcade', 1, 0).maxConcurrentWords).toBeGreaterThanOrEqual(2);
+    expect(difficultyAt('survival', 1, 0).maxConcurrentWords).toBeGreaterThanOrEqual(2);
+  });
+
+  it('respects every ceiling however long the run lasts', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: MAX_LEVEL }), fc.double({ min: 0, max: 7200, noNaN: true }), (level, t) => {
+        for (const mode of ['arcade', 'survival', 'speedTest', 'accuracy'] as const) {
+          const d = difficultyAt(mode, level, t);
+          expect(d.maxConcurrentWords).toBeLessThanOrEqual(MAX_CONCURRENT_WORDS);
+          expect(d.spawnIntervalMs).toBeGreaterThanOrEqual(MIN_SPAWN_INTERVAL_MS);
+          expect(d.fallSpeed).toBeLessThanOrEqual(difficultyForMode(mode, level).fallSpeed * MAX_RAMP);
+        }
+      }),
+    );
+  });
+
+  it('keeps learning mode readable no matter how long it runs', () => {
+    expect(difficultyAt('learning', MAX_LEVEL, 3600).maxConcurrentWords).toBeLessThanOrEqual(
+      LEARNING_MAX_CONCURRENT,
+    );
+  });
+
+  it('leaves the level curve itself untouched at t=0', () => {
+    expect(difficultyAt('arcade', 6, 0)).toEqual(difficultyForMode('arcade', 6));
   });
 });
 

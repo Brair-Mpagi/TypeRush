@@ -358,6 +358,13 @@ body {
   font-weight: 700;
 }
 
+.hud__ramp {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
 .hud__combo {
   font-family: var(--mono);
   font-size: 13px;

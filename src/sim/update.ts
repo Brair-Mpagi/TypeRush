@@ -1,11 +1,4 @@
-import {
-  ADAPT_EVERY_WORDS,
-  adaptLevel,
-  difficultyForMode,
-  ema,
-  MAX_LEVEL,
-  startingLives,
-} from './difficulty';
+import { ADAPT_EVERY_WORDS, adaptLevel, difficultyAt, ema, MAX_LEVEL, startingLives } from './difficulty';
 import { MinHeap } from './minheap';
 import { weakestKeys, buildErrorMap, wpm } from './metrics';
 import { WordPool } from './pool';
@@ -321,7 +314,9 @@ function detectMisses(ctx: SimContext, state: SessionState, events: GameEvent[])
 }
 
 function maybeSpawn(ctx: SimContext, state: SessionState, dt: number, events: GameEvent[]): void {
-  const params = difficultyForMode(state.mode, state.level);
+  // Read the ramped parameters: pressure rises with time in the run, not only
+  // when the level changes.
+  const params = difficultyAt(state.mode, state.level, state.elapsed);
   state.spawnCountdown -= dt;
   if (state.spawnCountdown > 0) return;
   state.spawnCountdown = params.spawnIntervalMs / 1000;

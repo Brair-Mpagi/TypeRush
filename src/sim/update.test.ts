@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { difficultyForMode, startingLives } from './difficulty';
+import { difficultyAt, difficultyForMode, startingLives } from './difficulty';
 import { advance, keys, runBot, runFrames } from './headless';
 import { computeMetrics } from './metrics';
 import { FLOOR_Y, WORLD_WIDTH, type SessionState } from './types';
@@ -26,15 +26,45 @@ describe('spawning', () => {
     expect(events.some((e) => e.type === 'wordSpawned')).toBe(true);
   });
 
-  it('never exceeds the concurrency cap for the level', () => {
+  it('never exceeds the concurrency cap for the level and elapsed time', () => {
     const { ctx, state } = newGame({ level: 12 });
-    const cap = difficultyForMode('arcade', 12).maxConcurrentWords;
     let current = state;
     for (let i = 0; i < 3000; i++) {
       current = update(ctx, current, 1 / 60, []).state;
-      expect(current.activeWords.length).toBeLessThanOrEqual(cap);
+      expect(current.activeWords.length).toBeLessThanOrEqual(
+        difficultyAt('arcade', current.level, current.elapsed).maxConcurrentWords,
+      );
       if (current.over) break;
     }
+  });
+
+  it('fills the screen with several words rather than one at a time', () => {
+    const { ctx, state } = newGame({ level: 1 });
+    const { state: next } = advance(ctx, state, 6);
+    expect(next.activeWords.length).toBeGreaterThan(1);
+  });
+
+  it('spawns faster words the longer the run lasts', () => {
+    const ctx = createContext();
+    // A bot that keeps up, so words are cleared and the run reaches the ramp.
+    const early = runBot(ctx, createSession({ mode: 'arcade', level: 2, seed: 5 }), { cps: 14, seconds: 10 });
+    const earlySpeed = Math.max(...early.state.activeWords.map((w) => w.speed));
+
+    const late = runBot(ctx, early.state, { cps: 14, seconds: 120 });
+    const lateSpeed = Math.max(...late.state.activeWords.map((w) => w.speed));
+    expect(lateSpeed).toBeGreaterThan(earlySpeed);
+  });
+
+  it('leaves words already in the air at the speed they were spawned with', () => {
+    const { ctx, state } = newGame({ level: 3 });
+    const seeded = spawnOne(ctx, state);
+    const word = seeded.activeWords[0]!;
+    const speedAtSpawn = word.speed;
+    const arrivalAtSpawn = word.arrivalTime;
+    advance(ctx, seeded, 3);
+    // A mid-flight speed change would invalidate the precomputed arrival time.
+    expect(word.speed).toBe(speedAtSpawn);
+    expect(word.arrivalTime).toBe(arrivalAtSpawn);
   });
 
   it('keeps words inside the play field', () => {

@@ -61,6 +61,10 @@ pooling buys — but performs no I/O and draws no randomness it does not thread 
   balancing means moving constants (§6.1).
 - **Adaptation has a dead zone.** EMA-smoothed accuracy with separate up (0.97) and down (0.85) thresholds, so
   difficulty doesn't flip-flop every few words (§6.2).
+- **Pressure rises with the clock, not only with the level.** Several words are in the air from level 1, and a
+  bounded in-run ramp (up to ×1.9 over ~3 minutes) speeds up spawns, fall speed and concurrency. The ramp applies
+  at spawn time only — words already falling keep their speed, so nothing on screen ever jumps and the precomputed
+  arrival times stay valid.
 - **`dt` is clamped to 50ms** and the game pauses on `visibilitychange`, so a backgrounded tab can't drop every
   word at once (§4, §18).
 - **Raw keystrokes are never persisted.** Only per-key attempt/error aggregates reach storage; keystroke timing is

@@ -17,7 +17,15 @@ export function Hud({ hud, mode, maxLives }: Props) {
 
       <div className="hud__group hud__group--center">
         <span className="hud__mode">{mode}</span>
-        <span className="hud__level">Level {hud.level}</span>
+        <span className="hud__level">
+          Level {hud.level}
+          {hud.ramp > 1 && (
+            <span className="hud__ramp" title="Words speed up the longer you last">
+              {' '}
+              ×{hud.ramp.toFixed(1)} speed
+            </span>
+          )}
+        </span>
         {hud.combo > 0 && (
           <span className="hud__combo" data-multiplier={hud.multiplier}>
             {hud.combo} combo ×{hud.multiplier}
