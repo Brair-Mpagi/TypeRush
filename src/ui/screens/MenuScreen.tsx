@@ -1,14 +1,19 @@
+import { useState } from 'react';
+import type { ProgressRow } from '../../persistence/schema';
 import type { Preferences } from '../usePreferences';
 
 interface Props {
   onPlay: () => void;
   preferences: Preferences;
   onTogglePreference: (key: keyof Preferences) => void;
-  bestWpm: number | null;
-  bestScore: number | null;
+  progress: ProgressRow;
+  onClearHistory: () => Promise<void>;
 }
 
-export function MenuScreen({ onPlay, preferences, onTogglePreference, bestWpm, bestScore }: Props) {
+export function MenuScreen({ onPlay, preferences, onTogglePreference, progress, onClearHistory }: Props) {
+  const [confirmingClear, setConfirmingClear] = useState(false);
+  const hasHistory = progress.sessionsPlayed > 0;
+
   return (
     <div className="screen screen--center">
       <h1 className="title">
@@ -16,10 +21,12 @@ export function MenuScreen({ onPlay, preferences, onTogglePreference, bestWpm, b
       </h1>
       <p className="subtitle">Words fall. Type them before they land.</p>
 
-      {(bestWpm !== null || bestScore !== null) && (
+      {hasHistory && (
         <p className="menu__bests">
-          {bestWpm !== null && <span>Best {Math.round(bestWpm)} WPM</span>}
-          {bestScore !== null && <span>High score {bestScore.toLocaleString()}</span>}
+          <span>Best {Math.round(progress.bestWpm)} WPM</span>
+          <span>{(progress.bestAccuracy * 100).toFixed(1)}% accuracy</span>
+          <span>High score {progress.bestScore.toLocaleString()}</span>
+          <span>{progress.xp.toLocaleString()} XP</span>
         </p>
       )}
 
@@ -54,6 +61,35 @@ export function MenuScreen({ onPlay, preferences, onTogglePreference, bestWpm, b
           High contrast
         </label>
       </fieldset>
+
+      {hasHistory && (
+        <p className="menu__data">
+          <span className="hint">
+            {progress.sessionsPlayed} sessions · {progress.totalWords.toLocaleString()} words · stored on this device
+            only
+          </span>
+          {confirmingClear ? (
+            <>
+              <button
+                type="button"
+                className="button button--small"
+                onClick={() => {
+                  void onClearHistory().finally(() => setConfirmingClear(false));
+                }}
+              >
+                Delete everything
+              </button>
+              <button type="button" className="button button--small" onClick={() => setConfirmingClear(false)}>
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button type="button" className="button button--small" onClick={() => setConfirmingClear(true)}>
+              Clear history
+            </button>
+          )}
+        </p>
+      )}
     </div>
   );
 }

@@ -7,25 +7,37 @@ import { MenuScreen } from './screens/MenuScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import { useFsm } from './useFsm';
 import { usePreferences } from './usePreferences';
+import { useProfile, type Records } from './useProfile';
 
 export function App() {
   const engine = useMemo(() => new GameEngine(), []);
   const { screen, go } = useFsm('menu');
   const { preferences, toggle } = usePreferences();
+  const { progress, history, weakKeys, saveSession, clear } = useProfile();
   const [selection, setSelection] = useState<{ mode: GameMode; level: number }>({ mode: 'arcade', level: 1 });
   const [summary, setSummary] = useState<SessionSummary | null>(null);
+  const [records, setRecords] = useState<Records>({ wpm: false, accuracy: false, score: false });
   const goRef = useRef(go);
   goRef.current = go;
+  const saveRef = useRef(saveSession);
+  saveRef.current = saveSession;
 
   useEffect(() => {
     engine.onGameOver = (result) => {
       setSummary(result);
       goRef.current('gameOver');
+      void saveRef.current(result).then(setRecords);
     };
     return () => {
       engine.onGameOver = null;
     };
   }, [engine]);
+
+  // Personalised word selection starts from the stored profile, so a run is
+  // targeted at the player's weak keys from its very first word (§10).
+  useEffect(() => {
+    engine.setWeakKeyProfile(weakKeys);
+  }, [engine, weakKeys]);
 
   // gameOver is a moment, not a screen: hand straight over to the results view.
   useEffect(() => {
@@ -42,6 +54,7 @@ export function App() {
     (mode: GameMode, level: number) => {
       setSelection({ mode, level });
       setSummary(null);
+      setRecords({ wpm: false, accuracy: false, score: false });
       go('loading');
     },
     [go],
@@ -71,13 +84,17 @@ export function App() {
           onPlay={() => go('levelSelect')}
           preferences={preferences}
           onTogglePreference={toggle}
-          bestWpm={null}
-          bestScore={null}
+          progress={progress}
+          onClearHistory={clear}
         />
       )}
 
       {screen === 'levelSelect' && (
-        <LevelSelectScreen onStart={startSession} onBack={() => go('menu')} highestLevelUnlocked={30} />
+        <LevelSelectScreen
+          onStart={startSession}
+          onBack={() => go('menu')}
+          highestLevelUnlocked={progress.highestLevelUnlocked}
+        />
       )}
 
       {screen === 'loading' && (
@@ -101,6 +118,9 @@ export function App() {
       {screen === 'results' && summary && (
         <ResultsScreen
           summary={summary}
+          records={records}
+          history={history}
+          progress={progress}
           onPlayAgain={() => {
             go('levelSelect');
             startSession(selection.mode, selection.level);

@@ -96,6 +96,15 @@ export class GameEngine {
     this.reducedMotion = value;
   }
 
+  /**
+   * Seeds word selection with the player's weak keys from previous sessions
+   * (§10) — personalisation starts at the first word of a run, not after the
+   * first fifteen. Rebuilds the alias samplers, so call it between sessions.
+   */
+  setWeakKeyProfile(stats: readonly KeyStat[]): void {
+    this.simCtx.selector.setWeakKeys(weakestKeys(stats));
+  }
+
   start(options: SessionOptions): void {
     this.stop();
     resetContext(this.simCtx);
