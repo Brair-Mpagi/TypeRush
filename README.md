@@ -1,6 +1,7 @@
 # TypeRush
 
-A falling-word typing trainer. Words drop from the top of the screen; you type them before they land.
+A typing trainer built as a space shooter. Words ride enemy craft descending on your ship; every correct key
+fires a bolt, and a word that reaches the bottom costs you a life.
 
 Built to the design in [docs/plan.md](docs/plan.md) — the section references (§) throughout the code and this
 README point back at it.
@@ -8,7 +9,7 @@ README point back at it.
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 125 tests: unit, property-based, replay, perf budget
+npm test         # 157 tests: unit, property-based, replay, perf budget
 npm run build    # typecheck + production bundle
 ```
 
@@ -107,3 +108,32 @@ npx vitest run src/sim # simulation core only — runs in Node, no browser
 | letters/symbols | type the highlighted word |
 | Backspace | un-type a character (does not erase the logged error) |
 | Escape | pause / resume |
+
+## Deploying
+
+The game is entirely client-side — no server, no API routes, no environment variables. Everything it stores lives
+in the player's own IndexedDB, so a static host is all it needs.
+
+```bash
+npx vercel        # preview deployment
+npx vercel --prod # production
+```
+
+[vercel.json](vercel.json) pins the parts that are easy to get wrong on a static SPA:
+
+- **Build** runs `npm run build`, which typechecks before bundling — a type error fails the deployment rather
+  than shipping.
+- **SPA rewrite** serves `index.html` for any path. Static files still win, so hashed assets resolve normally.
+  This is also why `base` is `/` and not `./`: relative asset URLs would resolve against the requested path and
+  404 on any deep link.
+- **Caching**: hashed assets are immutable for a year; `index.html` always revalidates, so a deploy takes effect
+  on the next load.
+- **Headers**: a strict CSP (`default-src 'self'`, no inline scripts), `nosniff`, `frame-ancestors 'none'` and a
+  closed `Permissions-Policy`. The app makes no network requests and loads no third-party code, so this costs
+  nothing. `style-src` allows `'unsafe-inline'` for one dynamic width on the weak-key bars — the directive that
+  matters for XSS, `script-src`, stays locked down.
+
+Verified against the production bundle served with exactly these headers: the app boots on a deep link, IndexedDB
+and WebAudio work, and a full run plays with no console errors.
+
+Any other static host works too — build with `npm run build` and serve `dist/` with the same SPA fallback.
